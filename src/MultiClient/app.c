@@ -122,7 +122,7 @@ int appStartAres(App* app, const char* host, uint16_t port)
     ret = getaddrinfo(host, buf, &hints, &result);
     if (ret != 0)
     {
-        fprintf(stderr, "Unable to resolve %s:%d: %s\n", host, port, strerror(WSAGetLastError()));
+        fprintf(stderr, "Unable to resolve %s:%d: %s\n", host, port, GetErrorMsg(WSAGetLastError()));
         closesocket(sock);
         return 1;
     }
@@ -141,7 +141,7 @@ int appStartAres(App* app, const char* host, uint16_t port)
     for (ptr = result; ptr != NULL; ptr = ptr->ai_next)
     {
         ret = connect(sock, ptr->ai_addr, (int)ptr->ai_addrlen);
-        // printf("[ares] connect: %d %d %s %p\n", ret, WSAGetLastError(), strerror(WSAGetLastError()), ptr);
+        // printf("[ares] connect: %d %d %s %p\n", ret, WSAGetLastError(), GetErrorMsg(WSAGetLastError()), ptr);
         if (ret == 0 || (ret == SOCKET_ERROR && (WSAGetLastError() == WSAEINPROGRESS || WSAGetLastError() == WSAEWOULDBLOCK))) {
             // printf("[ares] connection in progress...\n");
             break;
@@ -179,7 +179,6 @@ static void appGameInit(App* app, SOCKET sock, int apiProtocol)
 static void appCheckPj64(App* app)
 {
     SOCKET sock;
-    u_long mode;
     fd_set readfds;
     int ret;
     TIMEVAL timeout;
@@ -240,8 +239,8 @@ static void appCheckAres(App* app)
     // printf("[ares] connection completed\n");
     error = 0;
     len = sizeof(error);
-    if (getsockopt(app->socketAres, SOL_SOCKET, SO_ERROR, &error, &len) < 0 || error != 0) {        
-        // fprintf(stderr, "[ares] connection failed: %d %s\n", error, strerror(error));
+    if (getsockopt(app->socketAres, SOL_SOCKET, SO_ERROR, (void*)&error, &len) < 0 || error != 0) {
+        // fprintf(stderr, "[ares] connection failed: %d %s\n", error, GetErrorMsg(error));
         closesocket(app->socketAres);
         app->socketAres = INVALID_SOCKET;
         return;

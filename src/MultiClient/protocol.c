@@ -108,9 +108,9 @@ static int aresCommandRead(Game* game, uint32_t addr, int count, uint8_t *value)
         checksum += buf[i];
 
     error |= !sockSend(game->socketApi, "$", 1);
-    error |= !sockSend(game->socketApi, buf, strlen(buf));
+    error |= !sockSend(game->socketApi, buf, (uint32_t)strlen(buf));
     sprintf(buf, "#%02x", checksum);
-    error |= !sockSend(game->socketApi, buf, strlen(buf));
+    error |= !sockSend(game->socketApi, buf, (uint32_t)strlen(buf));
     if (error)
         return 0;
 
@@ -119,7 +119,7 @@ static int aresCommandRead(Game* game, uint32_t addr, int count, uint8_t *value)
         return 0;
     if (buf[0] != '+')
         return 0;
-    
+
     read = sockRecv(game->socketApi, buf, 1+count*2+3);
     if (read == 0)
         return 0;
@@ -151,14 +151,14 @@ static int aresCommandWrite(Game* game, uint32_t addr, int size, uint8_t *value)
     sprintf(buf, "M%08x,%x:", addr, size);
     for (int i = 0; buf[i] != 0; ++i)
         checksum += buf[i];
-    error |= !sockSend(game->socketApi, buf, strlen(buf));  
+    error |= !sockSend(game->socketApi, buf, (uint32_t)strlen(buf));
     for (int i = 0; i < size; i ++) {
         sprintf(buf, "%02x", value[i]);
-        error |= !sockSend(game->socketApi, buf, strlen(buf));
+        error |= !sockSend(game->socketApi, buf, (uint32_t)strlen(buf));
         checksum += buf[i];
     }
     sprintf(buf, "#%02x", checksum);
-    error |= !sockSend(game->socketApi, buf, strlen(buf));
+    error |= !sockSend(game->socketApi, buf, (uint32_t)strlen(buf));
 
     if (error)
         return 0;
@@ -168,7 +168,7 @@ static int aresCommandWrite(Game* game, uint32_t addr, int size, uint8_t *value)
         return 0;
     if (buf[0] != '+')
         return 0;
-    
+
     read = sockRecv(game->socketApi, buf, 1+2+3);
     if (read == 0)
         return 0;
@@ -185,6 +185,8 @@ static int aresCommandWrite(Game* game, uint32_t addr, int size, uint8_t *value)
 static uint32_t aresReadInt(Game* game, uint32_t addr, int size)
 {
     uint8_t buf[4];
+    uint32_t value;
+
     if (!aresCommandRead(game, addr, size, buf))
     {
         game->apiError = 1;
@@ -192,12 +194,14 @@ static uint32_t aresReadInt(Game* game, uint32_t addr, int size)
         game->socketApi = INVALID_SOCKET;
         return 0;
     }
-    uint32_t value;
+
     switch (size) {
     case 4: value = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3]; break;
     case 2: value = (buf[0] << 8) | buf[1]; break;
     case 1: value = buf[0]; break;
+    default: value = 0; break;
     }
+
     return value;
 }
 
@@ -313,7 +317,7 @@ void protocolWriteBuffer(Game* game, uint32_t addr, int count, uint8_t *buffer)
 {
     switch (game->apiProtocol) {
     case PROTOCOL_PJ64:
-        for (int i = 0; i < count; i ++) 
+        for (int i = 0; i < count; i ++)
             protocolWrite8(game, addr+i, buffer[i]);
         break;
     case PROTOCOL_ARES:

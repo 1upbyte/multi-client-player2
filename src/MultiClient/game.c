@@ -115,8 +115,11 @@ static uint64_t crc64(const void* data, size_t size)
     return crc;
 }
 
-static void memcpy_rev(uint8_t* dest, uint8_t *src, size_t n) {
-    for (int i = 0; i < n; i++) dest[n - 1 - i] = src[i];
+static void memcpy_rev(void* dest, void *src, size_t n) {
+    char* destc = (char*)dest;
+    char* srcc = (char*)src;
+
+    for (int i = 0; i < n; i++) destc[n - 1 - i] = srcc[i];
 }
 
 static uint64_t itemKey(uint32_t checkKey, uint8_t gameId, uint8_t playerFrom, uint32_t entriesCount)
@@ -239,7 +242,7 @@ static int insertMessage(Game* game, NetMsg* msg)
     if (index < 0)
         return -1;
 
-    
+
     protocolWrite8(game, game->apiNetAddr + 0x28 + index, msg->size);
     protocolWrite16(game, game->apiNetAddr + 0x68 + index * 2, msg->clientId);
     if (msg->size > 0) protocolWriteBuffer(game, game->apiNetAddr + 0xa8 + index * 32, msg->size, msg->data);
@@ -469,7 +472,6 @@ static void gameServerConnect(App* app, Game* game)
     struct addrinfo hints;
     struct addrinfo* result;
     struct addrinfo* ptr;
-    u_long mode;
     int ret;
     char buf[16];
     uint32_t tmp32;
